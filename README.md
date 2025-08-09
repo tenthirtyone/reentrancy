@@ -34,3 +34,50 @@ forge test
 ```
 
 The attack test passes, showing the vulnerability works.
+
+## Mitigations
+
+The `ReentrancyExample.sol` contract demonstrates several mitigation strategies:
+
+### 1. Checks-Effects-Interactions Pattern
+
+```solidity
+function safeWithdrawByCheck() public {
+    if (balances[msg.sender] > 0) {
+        uint256 amount = balances[msg.sender];
+        balances[msg.sender] = 0; // Update state BEFORE external call
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "Failed to withdraw");
+    }
+}
+```
+
+### 2. Reentrancy Guard (Partial Protection)
+
+```solidity
+modifier nonReentrant() {
+    require(!_reentrancyLock, "Reentrancy detected");
+    _reentrancyLock = true;
+    _;
+    _reentrancyLock = false;
+}
+
+function safeWithdrawByModifier() public nonReentrant {
+    // Still vulnerable - external call before state update
+}
+```
+
+### 3. Combined Approach (Recommended)
+
+```solidity
+function safeWithdrawByCheckAndModifier() public nonReentrant {
+    if (balances[msg.sender] > 0) {
+        uint256 amount = balances[msg.sender];
+        balances[msg.sender] = 0; // State update first
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "Failed to withdraw");
+    }
+}
+```
+
+**Key takeaway**: Reentrancy guards alone are insufficient. Always update state before external calls.
