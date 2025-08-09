@@ -44,7 +44,7 @@ contract ReentrancyExample {
      * 6. Contract sends another 1 ETH to attacker
      * 7. This repeats until contract is drained
      */
-    function withdraw() public nonReentrant {
+    function withdraw() public {
         (bool success, ) = msg.sender.call{value: balances[msg.sender]}("");
         require(success, "Failed to withdraw");
         balances[msg.sender] = 0; // State updated AFTER external call - TOO LATE!
@@ -59,7 +59,7 @@ contract ReentrancyExample {
      * - But malicious contracts can call OTHER functions or manipulate state during the call
      *
      * The nonReentrant modifier prevents direct recursion but doesn't solve
-     * the fundamental issue of external calls before state updates.
+     * the fundamental issue of the code being vulnerable to external calls before state updates.
      */
     function safeWithdrawByModifier() public nonReentrant {
         (bool success, ) = msg.sender.call{value: balances[msg.sender]}("");
@@ -94,6 +94,8 @@ contract ReentrancyExample {
      * 1. Check: Verify user has a balance
      * 2. Effect: Update state (zero the balance) BEFORE external call
      * 3. Interaction: Make external call after state is updated
+     *
+     * Uses more gas, but adds an extra layer. It's also more explicit to other developers.
      */
     function safeWithdrawByCheckAndModifier() public nonReentrant {
         if (balances[msg.sender] > 0) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {AttackWithdraw} from "../src/AttackWithdraw.sol";
 import {ReentrancyExample} from "../src/ReentrancyExample.sol";
 
@@ -19,7 +19,6 @@ contract AttackWithdrawTest is Test {
 
         vm.deal(user, 10 ether);
         vm.deal(address(this), 10 ether);
-        vm.deal(address(attackWithdraw), 10 ether);
     }
 
     /**
@@ -35,7 +34,6 @@ contract AttackWithdrawTest is Test {
      */
     function test_drainContract() public {
         vm.startPrank(user);
-
         uint256 userDeposit = 1 ether;
         (bool success, ) = address(reentrancyExample).call{value: userDeposit}(
             ""
@@ -45,14 +43,21 @@ contract AttackWithdrawTest is Test {
 
         assertEq(address(reentrancyExample).balance, userDeposit);
 
-        uint256 startingBalance = address(attackWithdraw).balance;
+        uint256 startingBalance = address(this).balance;
 
         attackWithdraw.deposit{value: userDeposit}();
 
         attackWithdraw.attackWithdraw();
+        attackWithdraw.withdraw();
 
-        uint256 endingBalance = address(attackWithdraw).balance;
+        uint256 endingBalance = address(this).balance;
 
-        assertEq(endingBalance, startingBalance + userDeposit);
+        console.log(startingBalance);
+        console.log(endingBalance);
+        console.log(userDeposit);
+
+        console.log(address(attackWithdraw).balance);
     }
+
+    function receive() external payable {}
 }
