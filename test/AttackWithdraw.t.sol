@@ -52,12 +52,8 @@ contract AttackWithdrawTest is Test {
 
         uint256 endingBalance = address(this).balance;
 
-        console.log(startingBalance);
-        console.log(endingBalance);
-        console.log(userDeposit);
-
-        console.log(address(attackWithdraw).balance);
+        assertEq(endingBalance, startingBalance + userDeposit);
     }
 
-    function receive() external payable {}
+    receive() external payable {}
 }

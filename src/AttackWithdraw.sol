@@ -27,7 +27,7 @@ contract AttackWithdraw {
     }
 
     function withdraw() public {
-        (bool success, ) = address(reentrancyExample).call{
+        (bool success, ) = address(msg.sender).call{
             value: address(this).balance
         }("");
         require(success);
