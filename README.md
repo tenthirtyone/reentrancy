@@ -1,66 +1,36 @@
-## Foundry
+# Reentrancy Attack Demo
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Re-entrancy is a well-known Ethereum/Web3 vulnerability. It is not inherently a flaw in the Ethereum Virtual Machine. Re-entrancy is an intentional feature that enables composability between smart contracts. Exploitx occurs when developers fail to account for the fact their contract shares execution context with other contracts it calls. A called contract gains control of execution. It can make a “call-back” into the original contract before state changes complete. Without proper state management or explicit re-entrancy guards, this can trigger an unintended loop. The effect is like withdrawing $100 from an ATM and, before the machine updates your balance, immediately withdrawing the same $100 again. On Ethereum, attackers repeat this loop until the targeted contract is drained or the transaction runs out of gas.
 
-Foundry consists of:
+## What's Here
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- `src/ReentrancyExample.sol` - Vulnerable contract with deposit/withdraw functions
+- `src/AttackWithdraw.sol` - Malicious contract that drains the vulnerable one
+- Tests that show the attack working
 
-## Documentation
+## The Vulnerability
 
-https://book.getfoundry.sh/
+The `withdraw()` function sends ETH before updating the balance:
 
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```solidity
+function withdraw() public {
+    (bool success, ) = msg.sender.call{value: balances[msg.sender]}("");
+    require(success, "Failed to withdraw");
+    balances[msg.sender] = 0; // TOO LATE!
+}
 ```
 
-### Test
+## The Attack
 
-```shell
-$ forge test
+1. Attacker deposits 1 ETH
+2. Calls `withdraw()`
+3. During the ETH transfer, attacker's `receive()` function calls `withdraw()` again
+4. Repeats until contract is drained
+
+## Run It
+
+```bash
+forge test
 ```
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+The attack test passes, showing the vulnerability works.
